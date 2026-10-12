@@ -76,6 +76,7 @@ jobs:
           for apk in "${apks[@]}"; do
             echo "Verifying $apk"
             "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --min-sdk-version=23 "$apk"
           done
 
       - name: Upload signed APKs as workflow artifact
