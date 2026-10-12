@@ -8,6 +8,8 @@ android {
     compileSdk = 35
     signingConfigs {
         create("release") {
+            enableV1Signing = true
+            enableV2Signing = true
             val keystorePath = System.getenv("TAPGET_KEYSTORE_PATH")
             val storePasswordValue = System.getenv("TAPGET_STORE_PASSWORD")
             val keyAliasValue = System.getenv("TAPGET_KEY_ALIAS")
