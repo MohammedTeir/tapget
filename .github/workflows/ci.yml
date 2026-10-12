@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Compile and test Android project
+  build-test:
+    name: Validate, test, and build debug APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,12 +25,12 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.9"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -38,16 +38,36 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Compile debug APK
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Show build tool versions
+        run: |
+          java -version
+          gradle --version
+          sdkmanager --list_installed
 
-      - name: Run unit tests
-        run: gradle --no-daemon :app:testDebugUnitTest
+      - name: Run Android lint, unit tests, and assemble debug APK
+        run: >-
+          gradle --no-daemon
+          :app:lintDebug
+          :app:testDebugUnitTest
+          :app:assembleDebug
 
       - name: Upload debug APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: tapget-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload lint and test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tapget-ci-reports
+          path: |
+            app/build/reports/lint-results-debug.html
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
           retention-days: 14
