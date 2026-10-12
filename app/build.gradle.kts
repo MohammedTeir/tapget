@@ -21,6 +21,7 @@ android {
             }
         }
     }
+    // Produce one installable universal APK and optimized APKs for each common ABI.
     splits {
         abi {
             isEnable = true
