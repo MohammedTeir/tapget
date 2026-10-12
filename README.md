@@ -49,3 +49,7 @@ For example, on Linux/macOS, encode the file with `base64 -w 0 tapget-release.jk
 Then open **Actions → Build signed APKs and publish GitHub Release → Run workflow** for a test build. To publish a release, push a version tag such as `v0.1.0`; GitHub Actions will build and verify all APKs, then attach them to the GitHub Release. Ensure repository Actions settings allow the workflow to create releases; if your organization restricts workflow permissions, grant the workflow write access to repository contents. Keep secure backups of the keystore and passwords: updates published under the same Android application ID must be signed with the same key.
 
 **Note:** These workflows have been added to the project source but have not been executed in GitHub Actions from this environment. A successful build/signature verification is not yet claimed.
+
+### GitHub Actions Android SDK setup
+
+Both workflows use `android-actions/setup-android@v4` and explicitly install only `platform-tools`. They do not request the retired Android SDK `tools` package. The workflows install the required Android platform and build-tools versions separately with `sdkmanager`.
