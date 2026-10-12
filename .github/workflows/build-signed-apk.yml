@@ -1,4 +1,4 @@
-name: Build signed release APKs
+name: Build signed APKs and publish GitHub Release
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release:
-    name: Build, sign, and publish APKs
+    name: Build, verify, and publish signed APKs
     runs-on: ubuntu-latest
     steps:
       - name: Check required signing secrets
@@ -22,7 +22,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "Missing signing secrets. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD in repository Actions secrets." >&2
+            echo "Missing signing secrets. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD in GitHub repository Actions secrets." >&2
             exit 1
           fi
 
@@ -50,10 +50,10 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tapget-release.jks"
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tapget-release.jks"
           chmod 600 "$RUNNER_TEMP/tapget-release.jks"
 
-      - name: Build signed release APKs
+      - name: Build signed universal and ABI APKs
         env:
           TAPGET_KEYSTORE_PATH: ${{ runner.temp }}/tapget-release.jks
           TAPGET_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -75,28 +75,19 @@ jobs:
             "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
           done
 
-      - name: Upload signed APK artifacts
+      - name: Upload signed APKs as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tapget-signed-release-apks
+          name: tapget-signed-apks-${{ github.ref_name }}
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish APKs to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          tag="$GITHUB_REF_NAME"
-          apks=(app/build/outputs/apk/release/*.apk)
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" "${apks[@]}" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$tag" "${apks[@]}" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "TapGet $tag" \
-              --generate-notes \
-              --verify-tag
-          fi
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: TapGet ${{ github.ref_name }}
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/*.apk
