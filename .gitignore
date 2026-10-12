@@ -1,0 +1,16 @@
+# Gradle / Android build output
+.gradle/
+**/build/
+
+# Local Android SDK path
+local.properties
+
+# IDE state
+.idea/
+*.iml
+
+# Signing keys and certificates (never commit these)
+*.jks
+*.keystore
+*.p12
+*.pem
