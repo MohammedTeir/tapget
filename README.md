@@ -69,3 +69,7 @@ This is still a UI prototype: transfer progress is simulated, download state is 
 
 ### UI refinement compile fix
 The refined Downloads header uses a `BrandHeader` composable that loads the supplied primary/reversed TapGet wordmark from `app/src/main/assets/brand`. The composable is defined in `MainActivity.kt`; if asset loading fails, it falls back to a text wordmark.
+
+## UI refinement pass 2
+
+Updated Queue, Completed, Download Details, Settings, and Add Download dialog layouts for consistent Material 3 cards, hierarchy, status visibility, touch targets, and long-text handling. Transfers remain simulated; the download engine is not implemented in this pass.

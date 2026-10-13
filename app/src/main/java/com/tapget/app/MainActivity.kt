@@ -328,100 +328,317 @@ private fun statusColor(status: DownloadStatus): Color = when(status) {
 
 @Composable
 private fun QueueScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> Unit, onStart: (Int) -> Unit) {
-    ScreenHeader("Queue", "${items.size} waiting")
-    if (items.isEmpty()) EmptyState("Queue is clear", "Downloads you add to the queue will appear here.")
-    else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(items, key = { it.id }) { item ->
-            Card(Modifier.fillMaxWidth().clickable { onSelect(item) }) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.DragHandle, "Queue item")
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) { Text(item.name, fontWeight = FontWeight.SemiBold); Text(item.size, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { onStart(item.id) }) { Icon(Icons.Default.PlayArrow, "Start download") }
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader("Queue", "Downloads waiting to start")
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CompletedScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> Unit, onRemove: (DownloadItem) -> Unit) {
-    ScreenHeader("Completed", "${items.size} finished")
-    if (items.isEmpty()) EmptyState("No completed downloads", "Finished files will be collected here.")
-    else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(items, key = { it.id }) { item ->
-            Card(Modifier.fillMaxWidth().clickable { onSelect(item) }) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF15803D), modifier = Modifier.size(34.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) { Text(item.name, fontWeight = FontWeight.SemiBold); Text(item.size, fontSize = 12.sp) }
-                    IconButton(onClick = { onRemove(item) }) { Icon(Icons.Default.DeleteOutline, "Remove from history") }
-                }
+            Column(Modifier.weight(1f)) {
+                Text("${items.size} queued", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Start a download when you're ready.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-    }
-}
-
-@Composable
-private fun DetailScreen(item: DownloadItem, onBack: () -> Unit, onAction: (String) -> Unit) {
-    ScreenHeader("Download details", item.name, { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } })
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(20.dp)) {
-                Text(statusLabel(item.status), color = statusColor(item.status), fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(12.dp))
-                LinearProgressIndicator(progress = { item.progress / 100f }, modifier = Modifier.fillMaxWidth())
-                Text("${item.progress}% · ${item.size}", modifier = Modifier.padding(top = 8.dp))
-                Text("Source URL", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp))
-                Text(item.url, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            when(item.status) {
-                DownloadStatus.DOWNLOADING -> Button(onClick = { onAction("Pause") }) { Icon(Icons.Default.Pause, null); Text("Pause") }
-                DownloadStatus.PAUSED -> Button(onClick = { onAction("Resume") }) { Icon(Icons.Default.PlayArrow, null); Text("Resume") }
-                DownloadStatus.FAILED, DownloadStatus.CANCELLED -> Button(onClick = { onAction("Retry") }) { Icon(Icons.Default.Refresh, null); Text("Retry") }
-                else -> {}
-            }
-            if (item.status != DownloadStatus.COMPLETED && item.status != DownloadStatus.CANCELLED) OutlinedButton(onClick = { onAction("Cancel") }) { Text("Cancel") }
-        }
-        Text("Prototype data only. No real file transfer is performed.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f), fontSize = 12.sp)
-    }
-}
-
-@Composable
-private fun SettingsScreen(dark: Boolean, onDark: (Boolean) -> Unit) {
-    ScreenHeader("Settings", "Make TapGet work your way")
-    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item {
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) { Text("Appearance", fontWeight = FontWeight.SemiBold); Text("Light and dark theme", fontSize = 12.sp) }
-                    Switch(checked = dark, onCheckedChange = onDark)
-                }
-            }
-        }
-        listOf(
-            "Network" to "Connection preferences and data use",
-            "Storage" to "Download folder and file handling",
-            "Notifications" to "Transfer alerts and completion sounds",
-            "Advanced" to "Diagnostics and prototype information"
-        ).forEach { (title, subtitle) ->
-            item {
-                Card(Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.SettingsSuggest, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(12.dp))
-                        Column { Text(title, fontWeight = FontWeight.SemiBold); Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f)) }
+        if (items.isEmpty()) {
+            EmptyState("Queue is clear", "New queued downloads will appear here.")
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(items, key = { it.id }) { item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { onSelect(item) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = .10f),
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(item.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Spacer(Modifier.height(4.dp))
+                                Text(item.size, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(6.dp))
+                                StatusChip(item.status)
+                            }
+                            IconButton(onClick = { onStart(item.id) }, modifier = Modifier.size(48.dp)) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = "Start ${item.name}", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                     }
                 }
             }
         }
-        item { Text("TapGet UI prototype · simulated transfers only", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .55f), modifier = Modifier.padding(12.dp)) }
     }
 }
+
+
+@Composable
+private fun CompletedScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> Unit, onRemove: (DownloadItem) -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader("Completed", "Your finished downloads")
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF15803D).copy(alpha = .10f),
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (MaterialTheme.colorScheme.background == DarkBg) Color(0xFF4ADE80) else Color(0xFF15803D))
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Text("${items.size} completed", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Files ready to open or manage.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (items.isEmpty()) {
+            EmptyState("No completed downloads", "Finished files will be collected here.")
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(items, key = { it.id }) { item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { onSelect(item) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF15803D).copy(alpha = .10f),
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (MaterialTheme.colorScheme.background == DarkBg) Color(0xFF4ADE80) else Color(0xFF15803D))
+                                }
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(item.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Spacer(Modifier.height(4.dp))
+                                Text(item.size, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(6.dp))
+                                StatusChip(item.status)
+                            }
+                            IconButton(onClick = { onRemove(item) }, modifier = Modifier.size(48.dp)) {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = "Remove ${item.name} from history")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun DetailScreen(item: DownloadItem, onBack: () -> Unit, onAction: (String) -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader(
+            "Download details",
+            "File information and actions",
+            { IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } }
+        )
+        Column(
+            Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = .10f),
+                        modifier = Modifier.size(72.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Text(item.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(10.dp))
+                    StatusChip(item.status)
+                    Spacer(Modifier.height(20.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Progress", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.weight(1f))
+                        Text("${item.progress}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { item.progress.coerceIn(0, 100) / 100f },
+                        modifier = Modifier.fillMaxWidth().height(8.dp),
+                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = .12f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("File size", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.weight(1f))
+                        Text(item.size, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                    }
+                    if (item.speed.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Transfer speed", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.weight(1f))
+                            Text(item.speed, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
+            }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Source URL", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text(item.url, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Prototype details only. Real file transfer is not enabled yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                when (item.status) {
+                    DownloadStatus.DOWNLOADING -> Button(onClick = { onAction("Pause") }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.Pause, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Pause") }
+                    DownloadStatus.PAUSED -> Button(onClick = { onAction("Resume") }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.PlayArrow, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Resume") }
+                    DownloadStatus.FAILED, DownloadStatus.CANCELLED -> Button(onClick = { onAction("Retry") }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.Refresh, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Retry") }
+                    else -> {}
+                }
+                if (item.status != DownloadStatus.COMPLETED && item.status != DownloadStatus.CANCELLED) {
+                    OutlinedButton(onClick = { onAction("Cancel") }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.Close, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Cancel") }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun SettingsScreen(dark: Boolean, onDark: (Boolean) -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        ScreenHeader("Settings", "Make TapGet work your way")
+        LazyColumn(
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Text("APPEARANCE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = .10f), modifier = Modifier.size(44.dp)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(if (dark) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Dark theme", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text(if (dark) "Comfortable in low light" else "Bright, clean appearance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = dark, onCheckedChange = onDark)
+                    }
+                }
+            }
+            item {
+                Text("DOWNLOADS", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column {
+                        SettingsRow(Icons.Default.FolderOpen, "Storage location", "Destination picker will be connected in the download-engine phase")
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .65f))
+                        SettingsRow(Icons.Default.Wifi, "Network", "Connection and data preferences")
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .65f))
+                        SettingsRow(Icons.Default.Notifications, "Notifications", "Transfer and completion alerts")
+                    }
+                }
+            }
+            item {
+                Text("ABOUT", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    SettingsRow(Icons.Default.Info, "TapGet", "Fast. Organized. Under control.")
+                    Text(
+                        "UI prototype · transfers are simulated",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 72.dp, end = 16.dp, bottom = 16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = .09f), modifier = Modifier.size(40.dp)) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
 
 @Composable
 private fun EmptyState(title: String, message: String) {
@@ -439,6 +656,50 @@ private fun EmptyState(title: String, message: String) {
 }
 
 @Composable
+private fun AddDownloadDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
+    var url by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+        title = { Text("Add download", style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Enter a direct link to the file you want to download.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it; error = false },
+                    label = { Text("File URL") },
+                    placeholder = { Text("https://example.com/file.zip") },
+                    leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
+                    singleLine = true,
+                    isError = error,
+                    supportingText = { if (error) Text("Enter a valid HTTP or HTTPS URL.") else Text("HTTP and HTTPS links are supported in the planned engine.") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("File name (optional)") },
+                    leadingIcon = { Icon(Icons.Default.InsertDriveFile, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("This prototype adds a simulated transfer; real downloading is the next development milestone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val value = url.trim()
+                val valid = value.startsWith("https://", ignoreCase = true) || value.startsWith("http://", ignoreCase = true)
+                if (valid && value.substringAfter("://").isNotBlank()) onAdd(value, name.trim()) else error = true
+            }) { Text("Add download") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
 private fun AddDownloadDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
     var url by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
