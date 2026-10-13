@@ -33,7 +33,7 @@ Two workflows are included under `.github/workflows/`:
 
 - `ci.yml` builds the debug APK and runs local unit-test tasks on pushes, pull requests, or manual dispatch. The debug APK is available as the `tapget-debug-apk` workflow artifact.
 - `build-signed-apk.yml` builds a signed universal APK plus four ABI-specific APKs (`armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`) when manually dispatched or when a `v*` tag is pushed. It verifies every APK signature and uploads all APKs as a workflow artifact.
-- When a `v*` tag is pushed, the same workflow also creates/updates a GitHub Release with generated release notes and attaches all signed APKs. A manual workflow run uploads artifacts but does not publish a GitHub Release.
+- When manually dispatching the signed workflow, enter a semantic version in the `release_tag` field (for example `v0.1.1`). The workflow uses that value to create/update the GitHub Release and attach all signed APKs. A pushed `v*` tag continues to trigger the same release flow automatically.
 
 ### Configure signing secrets before running the signed workflow
 
@@ -46,7 +46,7 @@ Create a release keystore locally and keep it private. Do **not** commit the key
 
 For example, on Linux/macOS, encode the file with `base64 -w 0 tapget-release.jks` (on macOS, use `base64 tapget-release.jks` and remove any line breaks before saving). Store the output directly as a GitHub secret; never paste it into source files or commit it.
 
-Then open **Actions → Build signed APKs and publish GitHub Release → Run workflow** for a test build. To publish a release, push a version tag such as `v0.1.0`; GitHub Actions will build and verify all APKs, then attach them to the GitHub Release. Ensure repository Actions settings allow the workflow to create releases; if your organization restricts workflow permissions, grant the workflow write access to repository contents. Keep secure backups of the keystore and passwords: updates published under the same Android application ID must be signed with the same key.
+Then open **Actions → Build signed APKs and publish GitHub Release → Run workflow**, select the branch to build, and enter a version tag such as `v0.1.1` in `release_tag`. GitHub Actions will build and verify all APKs, then create/update the GitHub Release and attach them. Alternatively, push a version tag such as `v0.1.0` to trigger the same flow automatically. Ensure repository Actions settings allow the workflow to create releases; if your organization restricts workflow permissions, grant the workflow write access to repository contents. Keep secure backups of the keystore and passwords: updates published under the same Android application ID must be signed with the same key.
 
 **Note:** These workflows have been added to the project source but have not been executed in GitHub Actions from this environment. A successful build/signature verification is not yet claimed.
 
