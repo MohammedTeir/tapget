@@ -152,6 +152,30 @@ private fun ScreenHeader(title: String, subtitle: String? = null, action: @Compo
 }
 
 @Composable
+private fun BrandHeader(dark: Boolean, subtitle: String? = null, action: @Composable (() -> Unit)? = null) {
+    val context = LocalContext.current
+    val logo = remember(context, dark) {
+        val assetName = if (dark) "brand/tapget-logo-reversed.png" else "brand/tapget-logo-primary.png"
+        context.assets.open(assetName).use { BitmapFactory.decodeStream(it).asImageBitmap() }
+    }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Image(
+                bitmap = logo,
+                contentDescription = "TapGet",
+                modifier = Modifier.height(34.dp).widthIn(max = 180.dp),
+                contentScale = ContentScale.Fit
+            )
+            if (subtitle != null) Text(subtitle, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f), fontSize = 13.sp)
+        }
+        action?.invoke()
+    }
+}
+
+@Composable
 private fun DownloadsScreen(
     items: List<DownloadItem>, search: String, searching: Boolean, dark: Boolean,
     onSearchToggle: () -> Unit, onSearch: (String) -> Unit, onSelect: (DownloadItem) -> Unit,
