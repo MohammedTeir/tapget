@@ -152,24 +152,50 @@ private fun ScreenHeader(title: String, subtitle: String? = null, action: @Compo
 }
 
 @Composable
-private fun BrandHeader(dark: Boolean, subtitle: String? = null, action: @Composable (() -> Unit)? = null) {
+private fun BrandHeader(
+    dark: Boolean,
+    subtitle: String,
+    action: @Composable (() -> Unit)? = null
+) {
     val context = LocalContext.current
-    val logo = remember(context, dark) {
-        val assetName = if (dark) "brand/tapget-logo-reversed.png" else "brand/tapget-logo-primary.png"
-        context.assets.open(assetName).use { BitmapFactory.decodeStream(it).asImageBitmap() }
+    val logoFile = if (dark) "brand/tapget-logo-reversed.png" else "brand/tapget-logo-primary.png"
+    val logoBitmap = remember(logoFile) {
+        runCatching {
+            context.assets.open(logoFile).use { input ->
+                BitmapFactory.decodeStream(input)?.asImageBitmap()
+            }
+        }.getOrNull()
     }
+
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.weight(1f)) {
-            Image(
-                bitmap = logo,
-                contentDescription = "TapGet",
-                modifier = Modifier.height(34.dp).widthIn(max = 180.dp),
-                contentScale = ContentScale.Fit
+        Column(modifier = Modifier.weight(1f)) {
+            if (logoBitmap != null) {
+                Image(
+                    bitmap = logoBitmap,
+                    contentDescription = "TapGet",
+                    modifier = Modifier
+                        .fillMaxWidth(0.72f)
+                        .heightIn(max = 44.dp),
+                    contentScale = ContentScale.FillWidth
+                )
+            } else {
+                Text(
+                    text = "TapGet",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (subtitle != null) Text(subtitle, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f), fontSize = 13.sp)
         }
         action?.invoke()
     }

@@ -66,3 +66,6 @@ This pass applies selected phone-scale and visual-consistency rules from the Tap
 - Uses more readable dark-theme status colors.
 
 This is still a UI prototype: transfer progress is simulated, download state is not persisted, and the supporting settings rows do not configure a real transfer engine. The changes have been reviewed statically but have not been compiled or tested on an emulator/device in this environment. Run the Android CI workflow before merging.
+
+### UI refinement compile fix
+The refined Downloads header uses a `BrandHeader` composable that loads the supplied primary/reversed TapGet wordmark from `app/src/main/assets/brand`. The composable is defined in `MainActivity.kt`; if asset loading fails, it falls back to a text wordmark.
