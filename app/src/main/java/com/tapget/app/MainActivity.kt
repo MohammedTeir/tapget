@@ -699,27 +699,3 @@ private fun AddDownloadDialog(onDismiss: () -> Unit, onAdd: (String, String) -> 
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
-
-private fun AddDownloadDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
-    var url by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add download") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Paste a direct file URL to simulate adding a transfer.")
-                OutlinedTextField(value = url, onValueChange = { url = it; error = false }, label = { Text("Download URL") }, singleLine = true,
-                    isError = error, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("File name (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (error) Text("Enter a valid HTTP or HTTPS URL.", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-            }
-        },
-        confirmButton = { Button(onClick = {
-            val valid = url.trim().startsWith("https://") || url.trim().startsWith("http://")
-            if (valid) onAdd(url.trim(), name.trim()) else error = true
-        }) { Text("Start") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
