@@ -395,23 +395,6 @@ private fun QueueScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> U
     }
 }
 
-private fun QueueScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> Unit, onStart: (Int) -> Unit) {
-    ScreenHeader("Queue", "${items.size} waiting")
-    if (items.isEmpty()) EmptyState("Queue is clear", "Downloads you add to the queue will appear here.")
-    else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(items, key = { it.id }) { item ->
-            Card(Modifier.fillMaxWidth().clickable { onSelect(item) }) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.DragHandle, "Queue item")
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) { Text(item.name, fontWeight = FontWeight.SemiBold); Text(item.size, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    IconButton(onClick = { onStart(item.id) }) { Icon(Icons.Default.PlayArrow, "Start download") }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun CompletedScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> Unit, onRemove: (DownloadItem) -> Unit) {
     Column(Modifier.fillMaxSize()) {
@@ -475,23 +458,6 @@ private fun CompletedScreen(items: List<DownloadItem>, onSelect: (DownloadItem) 
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-private fun CompletedScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> Unit, onRemove: (DownloadItem) -> Unit) {
-    ScreenHeader("Completed", "${items.size} finished")
-    if (items.isEmpty()) EmptyState("No completed downloads", "Finished files will be collected here.")
-    else LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(items, key = { it.id }) { item ->
-            Card(Modifier.fillMaxWidth().clickable { onSelect(item) }) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF15803D), modifier = Modifier.size(34.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) { Text(item.name, fontWeight = FontWeight.SemiBold); Text(item.size, fontSize = 12.sp) }
-                    IconButton(onClick = { onRemove(item) }) { Icon(Icons.Default.DeleteOutline, "Remove from history") }
                 }
             }
         }
@@ -585,32 +551,6 @@ private fun DetailScreen(item: DownloadItem, onBack: () -> Unit, onAction: (Stri
     }
 }
 
-private fun DetailScreen(item: DownloadItem, onBack: () -> Unit, onAction: (String) -> Unit) {
-    ScreenHeader("Download details", item.name, { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } })
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(20.dp)) {
-                Text(statusLabel(item.status), color = statusColor(item.status), fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(12.dp))
-                LinearProgressIndicator(progress = { item.progress / 100f }, modifier = Modifier.fillMaxWidth())
-                Text("${item.progress}% · ${item.size}", modifier = Modifier.padding(top = 8.dp))
-                Text("Source URL", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp))
-                Text(item.url, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            when(item.status) {
-                DownloadStatus.DOWNLOADING -> Button(onClick = { onAction("Pause") }) { Icon(Icons.Default.Pause, null); Text("Pause") }
-                DownloadStatus.PAUSED -> Button(onClick = { onAction("Resume") }) { Icon(Icons.Default.PlayArrow, null); Text("Resume") }
-                DownloadStatus.FAILED, DownloadStatus.CANCELLED -> Button(onClick = { onAction("Retry") }) { Icon(Icons.Default.Refresh, null); Text("Retry") }
-                else -> {}
-            }
-            if (item.status != DownloadStatus.COMPLETED && item.status != DownloadStatus.CANCELLED) OutlinedButton(onClick = { onAction("Cancel") }) { Text("Cancel") }
-        }
-        Text("Prototype data only. No real file transfer is performed.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f), fontSize = 12.sp)
-    }
-}
-
 @Composable
 private fun SettingsScreen(dark: Boolean, onDark: (Boolean) -> Unit) {
     Column(Modifier.fillMaxSize()) {
@@ -696,39 +636,6 @@ private fun SettingsRow(icon: androidx.compose.ui.graphics.vector.ImageVector, t
     }
 }
 
-private fun SettingsScreen(dark: Boolean, onDark: (Boolean) -> Unit) {
-    ScreenHeader("Settings", "Make TapGet work your way")
-    LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item {
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) { Text("Appearance", fontWeight = FontWeight.SemiBold); Text("Light and dark theme", fontSize = 12.sp) }
-                    Switch(checked = dark, onCheckedChange = onDark)
-                }
-            }
-        }
-        listOf(
-            "Network" to "Connection preferences and data use",
-            "Storage" to "Download folder and file handling",
-            "Notifications" to "Transfer alerts and completion sounds",
-            "Advanced" to "Diagnostics and prototype information"
-        ).forEach { (title, subtitle) ->
-            item {
-                Card(Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.SettingsSuggest, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(12.dp))
-                        Column { Text(title, fontWeight = FontWeight.SemiBold); Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f)) }
-                    }
-                }
-            }
-        }
-        item { Text("TapGet UI prototype · simulated transfers only", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .55f), modifier = Modifier.padding(12.dp)) }
-    }
-}
-
 @Composable
 private fun EmptyState(title: String, message: String) {
     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -785,30 +692,6 @@ private fun AddDownloadDialog(onDismiss: () -> Unit, onAdd: (String, String) -> 
                 if (valid && value.substringAfter("://").isNotBlank()) onAdd(value, name.trim()) else error = true
             }) { Text("Add download") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
-
-private fun AddDownloadDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
-    var url by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add download") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Paste a direct file URL to simulate adding a transfer.")
-                OutlinedTextField(value = url, onValueChange = { url = it; error = false }, label = { Text("Download URL") }, singleLine = true,
-                    isError = error, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("File name (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (error) Text("Enter a valid HTTP or HTTPS URL.", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-            }
-        },
-        confirmButton = { Button(onClick = {
-            val valid = url.trim().startsWith("https://") || url.trim().startsWith("http://")
-            if (valid) onAdd(url.trim(), name.trim()) else error = true
-        }) { Text("Start") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
