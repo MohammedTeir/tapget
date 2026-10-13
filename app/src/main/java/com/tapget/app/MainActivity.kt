@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +18,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.BitmapFactory
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -114,7 +119,7 @@ fun TapGetApp() {
                         selected = items.firstOrNull { it.id == selected!!.id }
                     })
                 } else when(tab) {
-                    "Downloads" -> DownloadsScreen(items, search, showSearch,
+                    "Downloads" -> DownloadsScreen(items, search, showSearch, dark,
                         onSearchToggle = { showSearch = !showSearch; if (!showSearch) search = "" },
                         onSearch = { search = it }, onSelect = { selected = it },
                         onPauseResume = { item -> items = items.map { if (it.id == item.id) it.copy(status = if (it.status == DownloadStatus.PAUSED) DownloadStatus.DOWNLOADING else DownloadStatus.PAUSED, speed = "") else it } },
@@ -137,9 +142,9 @@ fun TapGetApp() {
 
 @Composable
 private fun ScreenHeader(title: String, subtitle: String? = null, action: @Composable (() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             if (subtitle != null) Text(subtitle, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f), fontSize = 13.sp)
         }
         action?.invoke()
@@ -148,17 +153,17 @@ private fun ScreenHeader(title: String, subtitle: String? = null, action: @Compo
 
 @Composable
 private fun DownloadsScreen(
-    items: List<DownloadItem>, search: String, searching: Boolean,
+    items: List<DownloadItem>, search: String, searching: Boolean, dark: Boolean,
     onSearchToggle: () -> Unit, onSearch: (String) -> Unit, onSelect: (DownloadItem) -> Unit,
     onPauseResume: (DownloadItem) -> Unit, onCancel: (DownloadItem) -> Unit
 ) {
-    ScreenHeader("TapGet", "Fast. Organized. Under control.", {
-        IconButton(onClick = onSearchToggle) { Icon(Icons.Default.Search, "Search downloads") }
-    })
+    BrandHeader(dark = dark, subtitle = "Fast. Organized. Under control.") {
+        IconButton(onClick = onSearchToggle, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Search, "Search downloads") }
+    }
     if (searching) OutlinedTextField(value = search, onValueChange = onSearch, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         singleLine = true, label = { Text("Search downloads") }, leadingIcon = { Icon(Icons.Default.Search, null) })
     val visible = items.filter { it.name.contains(search, true) || it.url.contains(search, true) }
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SummaryPill("Active", items.count { it.status == DownloadStatus.DOWNLOADING })
         SummaryPill("Queued", items.count { it.status == DownloadStatus.QUEUED })
         SummaryPill("Done", items.count { it.status == DownloadStatus.COMPLETED })
@@ -173,7 +178,7 @@ private fun DownloadsScreen(
 
 @Composable
 private fun SummaryPill(label: String, count: Int) {
-    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surface) {
+    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("$count", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(6.dp)); Text(label, fontSize = 12.sp)
@@ -183,20 +188,32 @@ private fun SummaryPill(label: String, count: Int) {
 
 @Composable
 private fun DownloadCard(item: DownloadItem, onClick: () -> Unit, onPauseResume: () -> Unit, onCancel: () -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(onClick = onClick), shape = RoundedCornerShape(18.dp),
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick), shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = .10f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(46.dp)) {
+                Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = .10f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) {
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.InsertDriveFile, null, tint = MaterialTheme.colorScheme.primary) }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(item.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(statusLabel(item.status), color = statusColor(item.status), fontSize = 12.sp)
+                    Text(item.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    StatusChip(item.status)
                 }
-                IconButton(onClick = onPauseResume) { Icon(if (item.status == DownloadStatus.PAUSED) Icons.Default.PlayArrow else Icons.Default.Pause, if (item.status == DownloadStatus.PAUSED) "Resume" else "Pause") }
-                IconButton(onClick = onCancel) { Icon(Icons.Default.Close, "Cancel") }
+                when (item.status) {
+                    DownloadStatus.DOWNLOADING -> IconButton(onClick = onPauseResume, modifier = Modifier.size(48.dp)) {
+                        Icon(Icons.Default.Pause, "Pause download")
+                    }
+                    DownloadStatus.PAUSED -> IconButton(onClick = onPauseResume, modifier = Modifier.size(48.dp)) {
+                        Icon(Icons.Default.PlayArrow, "Resume download")
+                    }
+                    DownloadStatus.QUEUED -> Icon(Icons.Default.Schedule, contentDescription = "Queued")
+                    DownloadStatus.FAILED -> Icon(Icons.Default.ErrorOutline, contentDescription = "Failed", tint = statusColor(item.status))
+                    else -> {}
+                }
+                if (item.status in listOf(DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED, DownloadStatus.QUEUED)) {
+                    IconButton(onClick = onCancel, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Close, "Cancel download") }
+                }
             }
             Spacer(Modifier.height(12.dp))
             if (item.status == DownloadStatus.DOWNLOADING || item.status == DownloadStatus.PAUSED || item.status == DownloadStatus.COMPLETED) {
@@ -206,7 +223,37 @@ private fun DownloadCard(item: DownloadItem, onClick: () -> Unit, onPauseResume:
                     Text(if (item.status == DownloadStatus.COMPLETED) item.size else "${item.progress}% · ${item.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .7f), modifier = Modifier.weight(1f))
                     if (item.status == DownloadStatus.DOWNLOADING && item.speed.isNotBlank()) Text(item.speed, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                 }
-            } else Text(item.size, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f))
+            } else Text(item.size, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(status: DownloadStatus) {
+    val tint = statusColor(status)
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = tint.copy(alpha = if (MaterialTheme.colorScheme.background == DarkBg) 0.18f else 0.10f)
+    ) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Icon(
+                imageVector = when (status) {
+                    DownloadStatus.QUEUED -> Icons.Default.Schedule
+                    DownloadStatus.DOWNLOADING -> Icons.Default.Downloading
+                    DownloadStatus.PAUSED -> Icons.Default.PauseCircle
+                    DownloadStatus.COMPLETED -> Icons.Default.CheckCircle
+                    DownloadStatus.FAILED -> Icons.Default.Error
+                    DownloadStatus.CANCELLED -> Icons.Default.Cancel
+                },
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(14.dp)
+            )
+            Text(statusLabel(status), color = tint, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -223,9 +270,9 @@ private fun statusLabel(status: DownloadStatus) = when(status) {
 private fun statusColor(status: DownloadStatus): Color = when(status) {
     DownloadStatus.QUEUED -> Color(0xFF64748B)
     DownloadStatus.DOWNLOADING -> MaterialTheme.colorScheme.primary
-    DownloadStatus.PAUSED -> Color(0xFFB45309)
-    DownloadStatus.COMPLETED -> Color(0xFF15803D)
-    DownloadStatus.FAILED -> Color(0xFFDC2626)
+    DownloadStatus.PAUSED -> if (MaterialTheme.colorScheme.background == DarkBg) Color(0xFFFBBF24) else Color(0xFFB45309)
+    DownloadStatus.COMPLETED -> if (MaterialTheme.colorScheme.background == DarkBg) Color(0xFF4ADE80) else Color(0xFF15803D)
+    DownloadStatus.FAILED -> if (MaterialTheme.colorScheme.background == DarkBg) Color(0xFFF87171) else Color(0xFFDC2626)
     DownloadStatus.CANCELLED -> Color(0xFF64748B)
 }
 
@@ -239,7 +286,7 @@ private fun QueueScreen(items: List<DownloadItem>, onSelect: (DownloadItem) -> U
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.DragHandle, "Queue item")
                     Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) { Text(item.name, fontWeight = FontWeight.SemiBold); Text(item.size, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f)) }
+                    Column(Modifier.weight(1f)) { Text(item.name, fontWeight = FontWeight.SemiBold); Text(item.size, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton(onClick = { onStart(item.id) }) { Icon(Icons.Default.PlayArrow, "Start download") }
                 }
             }

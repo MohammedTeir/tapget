@@ -53,3 +53,16 @@ Then open **Actions → Build signed APKs and publish GitHub Release → Run wor
 ### GitHub Actions Android SDK setup
 
 Both workflows use `android-actions/setup-android@v4` and explicitly install only `platform-tools`. They do not request the retired Android SDK `tools` package. The workflows install the required Android platform and build-tools versions separately with `sdkmanager`.
+
+## UI refinement pass — 2026-10-12
+
+This pass applies selected phone-scale and visual-consistency rules from the TapGet Master Handoff:
+- Uses the approved primary/reversed TapGet wordmark in the Downloads header, chosen for the current light/dark theme.
+- Standardizes screen-header insets and typography around Material 3 styles.
+- Uses a consistent 16 dp download-card radius and 48 dp action targets.
+- Shows download status as a labeled chip with an icon, so state is not communicated by color alone.
+- Makes card actions state-aware: pause/resume and cancel are shown only for applicable states.
+- Improves long filename handling by allowing up to two lines in download cards.
+- Uses more readable dark-theme status colors.
+
+This is still a UI prototype: transfer progress is simulated, download state is not persisted, and the supporting settings rows do not configure a real transfer engine. The changes have been reviewed statically but have not been compiled or tested on an emulator/device in this environment. Run the Android CI workflow before merging.
